@@ -1,0 +1,47 @@
+# Локальный/staging деплой Brain3D AI: FastAPI backend + Three.js frontend.
+# Desktop-приложение (PyQt5) не контейнеризуется — оно запускается локально на машине врача.
+#
+# Запуск:
+#   docker compose up --build
+# API будет доступен на http://localhost:8000, web-интерфейс — на http://localhost:8080.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    image: brain3d-api:latest
+    container_name: brain3d-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - API_CORS_ORIGINS=["http://localhost:8080"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - brain3d-data:/app/data
+      - ./models/weights:/app/models/weights:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    image: brain3d-web:latest
+    container_name: brain3d-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  brain3d-data:
+    driver: local

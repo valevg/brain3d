@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Brain3D AI — 3D-визуализация</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <!-- Полноэкранный 3D-вьюпорт (Three.js монтируется сюда в main.js) -->
+    <div id="app"></div>
+
+    <header class="topbar">
+      <div>
+        <h1 id="app-title">Brain3D AI</h1>
+        <span class="subtitle" id="app-subtitle"></span>
+      </div>
+      <div id="locale-switch"></div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="panel" id="uploader-panel"></div>
+      <div class="panel" id="resources-panel"></div>
+      <div class="panel" id="pipeline-settings-panel"></div>
+      <div class="panel" id="models-panel"></div>
+    </aside>
+
+    <div class="panel progress-panel" id="progress-bar-panel"></div>
+    <div class="panel model-info-panel" id="model-info-panel"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

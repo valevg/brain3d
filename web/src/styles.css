@@ -1,0 +1,490 @@
+/* Стили интерфейса Brain3D AI: тёмная медицинская тема, адаптивная раскладка,
+   анимации загрузки. 3D-вьюпорт остаётся полноэкранным фоном (#app), вся панель
+   управления — оверлей поверх него (как и в исходной версии), но теперь
+   прокручиваемый сайдбар с несколькими карточками вместо одной формы загрузки. */
+
+:root {
+  --bg: #0b0d10;
+  --panel-bg: rgba(20, 22, 26, 0.92);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #e8eaed;
+  --text-muted: #9aa0a6;
+  --accent: #4f8cff;
+  --accent-hover: #6c9fff;
+  --ok: #3ddc84;
+  --warn: #ffb14e;
+  --error: #ff6b6b;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* [hidden] должен побеждать любые правила display на том же элементе (например,
+   .btn { display: inline-flex }) — при равной специфичности иначе выигрывает
+   правило, идущее позже в каскаде, и элемент остаётся видимым несмотря на атрибут. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  overflow: hidden;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--panel-border);
+  backdrop-filter: blur(6px);
+}
+
+.topbar h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.topbar .subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+#locale-switch {
+  display: flex;
+  gap: 4px;
+}
+
+#locale-switch button {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+#locale-switch button.active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(79, 140, 255, 0.15);
+}
+
+.sidebar {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  bottom: 0;
+  width: 340px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 15;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.panel h2 {
+  font-size: 0.95rem;
+  margin: 0 0 10px;
+}
+
+.panel h3 {
+  font-size: 0.82rem;
+  margin: 12px 0 6px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.panel-body {
+  font-size: 0.85rem;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.error-text {
+  color: var(--error);
+}
+
+.status-ok {
+  color: var(--ok);
+}
+
+.status-warn {
+  color: var(--warn);
+}
+
+/* --- Кнопки --- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-danger {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--error);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.28);
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.file-label {
+  position: relative;
+}
+
+.file-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.file-name {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* --- Настройки пайплайна --- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+}
+
+.field select {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Ресурсы --- */
+
+.resource-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-icon {
+  margin-right: 4px;
+}
+
+.recommended-models {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* --- Модели --- */
+
+.cache-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.model-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.model-row:last-child {
+  border-bottom: none;
+}
+
+.model-row-main {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.model-icon {
+  flex-shrink: 0;
+}
+
+.model-row-text {
+  min-width: 0;
+}
+
+.model-name {
+  font-weight: 600;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.model-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.model-usage {
+  font-size: 0.68rem;
+  margin-top: 2px;
+}
+
+.model-hint {
+  font-size: 0.7rem;
+  color: var(--warn);
+  margin-top: 4px;
+}
+
+.model-row-actions {
+  flex-shrink: 0;
+}
+
+.model-progress {
+  width: 80px;
+}
+
+/* --- Прогресс-бар --- */
+
+.progress-panel {
+  position: fixed;
+  left: 356px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 15;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.progress-panel.progress-failed {
+  border-color: var(--error);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  appearance: none;
+}
+
+.progress-bar::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.progress-bar::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progress-message {
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
+.progress-models {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* --- Результаты --- */
+
+.model-info-panel {
+  position: fixed;
+  right: 16px;
+  top: 60px;
+  width: 320px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  z-index: 15;
+}
+
+.result-section {
+  margin-bottom: 10px;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.result-table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+/* --- Анимация загрузки ("…") --- */
+
+.loading-dots::after {
+  content: "";
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75% {
+    content: "...";
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Адаптивность (мобильные устройства) --- */
+
+@media (max-width: 768px) {
+  .sidebar {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 60vh;
+    border-top: 1px solid var(--panel-border);
+    flex-direction: column;
+  }
+
+  .progress-panel {
+    left: 8px;
+    right: 8px;
+    bottom: calc(60vh + 8px);
+  }
+
+  .model-info-panel {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin: 8px;
+  }
+
+  .topbar h1 {
+    font-size: 1rem;
+  }
+
+  .topbar .subtitle {
+    display: none;
+  }
+}

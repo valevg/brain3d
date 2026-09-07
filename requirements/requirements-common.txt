@@ -1,0 +1,33 @@
+# Общие зависимости ядра (core/, models/, pipelines/, shared/) — нужны во всех точках входа:
+# API, desktop-приложении и при обучении/офлайн-инференсе моделей.
+
+# --- Глубокое обучение ---
+torch==2.3.1
+monai==1.3.2
+
+# --- Обработка медицинских изображений ---
+SimpleITK==2.3.1
+pydicom==2.4.4
+nibabel==5.2.1
+scikit-image==0.23.2
+scipy==1.13.1
+numpy==1.26.4
+
+# --- 3D-меши ---
+trimesh==4.4.1
+# trimesh.Trimesh.simplify_quadric_decimation в этой версии требует open3d (тяжёлая,
+# необязательная для остального проекта зависимость) — вместо неё используется
+# лёгкий fast-simplification напрямую (core/mesh_generator.py).
+fast-simplification==0.2.0
+
+# --- Конфигурация ---
+pydantic==2.7.4
+pydantic-settings==2.3.4
+PyYAML==6.0.1
+
+# --- Предобученные модели и оркестрация пайплайна (models/pretrained_models.py,
+# pipelines/brain_pipeline.py) ---
+requests==2.32.3
+tqdm==4.66.4
+psutil==6.0.0
+

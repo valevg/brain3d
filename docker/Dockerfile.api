@@ -1,0 +1,42 @@
+# Production-образ FastAPI backend (api/). Собирается из корня репозитория:
+#   docker build -f docker/Dockerfile.api -t brain3d-api .
+
+FROM python:3.10-slim AS base
+
+# Системные зависимости для SimpleITK/VTK/trimesh (рендеринг мешей, обработка изображений)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1 \
+    libglu1-mesa \
+    libxrender1 \
+    libsm6 \
+    libxext6 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements/requirements-common.txt requirements/requirements-api.txt requirements/
+RUN pip install --no-cache-dir -r requirements/requirements-common.txt -r requirements/requirements-api.txt
+
+COPY core/ core/
+COPY models/ models/
+COPY pipelines/ pipelines/
+COPY api/ api/
+COPY shared/ shared/
+COPY configs/ configs/
+
+RUN useradd --create-home --uid 1000 brain3d \
+    && mkdir -p /app/data \
+    && chown -R brain3d:brain3d /app
+USER brain3d
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    STORAGE_DIR=/app/data
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+CMD ["uvicorn", "api.fastapi_app:app", "--host", "0.0.0.0", "--port", "8000"]

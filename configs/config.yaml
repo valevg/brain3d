@@ -1,0 +1,54 @@
+# Конфигурация пайплайнов Brain3D AI: параметры препроцессинга и моделей для КТ и МРТ.
+# Загружается через core.config.PipelineConfig.from_yaml().
+
+# --- Параметры препроцессинга по модальностям ---
+
+ct:
+  # Окно Хаунсфилда для мягких тканей мозга + патологий (типичный диапазон для brain window)
+  hu_min: -100.0
+  hu_max: 300.0
+  normalize: hu_window
+  target_spacing_mm: [1.0, 1.0, 1.0]
+  n4_bias_correction: false
+
+mri:
+  # У МРТ нет фиксированной шкалы интенсивностей -> статистическая нормализация
+  hu_min: null
+  hu_max: null
+  normalize: z_score
+  target_spacing_mm: [1.0, 1.0, 1.0]
+  n4_bias_correction: true  # коррекция неоднородности поля — стандартна для МРТ мозга
+
+# --- Параметры моделей сегментации по модальностям ---
+# out_channels = фон + мозг + опухоль + сосуды (4). При добавлении кровоизлияний -> 5
+# и переобучении модели с новым классом (индекс 4, см. core/segmentation/inference.py).
+
+ct_model:
+  weights_path: "models/weights/unet3d_ct.pt"
+  in_channels: 1
+  out_channels: 4
+  roi_size: [128, 128, 128]
+  sw_batch_size: 4
+  overlap: 0.5
+
+mri_model:
+  weights_path: "models/weights/unet3d_mri.pt"
+  in_channels: 1
+  out_channels: 4
+  roi_size: [128, 128, 128]
+  sw_batch_size: 4
+  overlap: 0.5
+
+# --- Цвета структур для рендера (RGBA, 0..1) ---
+# Используются как значения по умолчанию; core/mesh/mesh_generator.py содержит те же
+# константы на стороне Python — секция ниже позволяет переопределить их без правки кода.
+
+structure_colors:
+  brain:
+    color_rgba: [0.8, 0.8, 0.8, 0.35]   # полупрозрачный серый
+  tumor:
+    color_rgba: [0.9, 0.15, 0.1, 1.0]   # красный
+  vessel:
+    color_rgba: [0.1, 0.3, 0.9, 1.0]    # синий
+  hemorrhage:
+    color_rgba: [1.0, 0.55, 0.0, 1.0]   # оранжевый (плановая структура, резерв на будущее)

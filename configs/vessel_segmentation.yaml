@@ -1,0 +1,30 @@
+# Конфигурация VesselSegmenter (core/vessel_segmentation.py): какие методы включены
+# и их параметры. Загружается через VesselSegmentationConfig.from_yaml().
+
+# --- Какие методы разрешены (учитывается segment_adaptive() и compare_methods()) ---
+enable_totalsegmentator: true
+enable_vista3d: false          # требует API-ключ NVIDIA или локальный NIM-контейнер
+enable_monai_vessel_model: false  # в MONAI Model Zoo пока нет готового bundle под сосуды мозга
+enable_frangi: true
+enable_threshold: true
+
+# --- TotalSegmentator ---
+totalsegmentator_fast: false          # true — в ~5 раз быстрее, ниже точность (рекоменд. на CPU)
+totalsegmentator_task: headneck_bones_vessels  # сонные/позвоночные артерии, ближе к Виллизиеву кругу
+
+# --- Классический фильтр Франги ---
+frangi_sigmas: [1.0, 2.0, 3.0]         # масштабы (в вокселях) под ожидаемый диаметр сосудов
+
+# --- Пороговая сегментация (контрастная КТ-ангиография) ---
+threshold_min_hu: 100.0
+threshold_max_hu: 500.0
+
+# --- Постобработка ---
+min_component_size: 100        # минимальный размер компоненты сосуда, вокселей
+morphology_iterations: 2       # итерации связывания сосудов (закрытие)
+smoothing_iterations: 3        # итерации сглаживания контура (открытие)
+circle_of_willis_roi_dilation: 5  # расширение области поиска мелких сосудов вокруг крупных
+
+# --- Кэширование результатов сегментации ---
+cache_enabled: true
+result_cache_dir: "~/.cache/brain3d/vessel_segmentation"
