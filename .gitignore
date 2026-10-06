@@ -1,1 +1,32 @@
+# Python
 __pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Переменные окружения
+.env
+
+# Данные и веса моделей
+data/
+models/weights/*.pt
+models/weights/*.pth
+!models/weights/.gitkeep
+
+# Web (Three.js / Vite)
+web/node_modules/
+web/dist/
+web/.env
+
+# IDE
+.vscode/
+.idea/
+
+# ОС
+.DS_Store
+Thumbs.db
