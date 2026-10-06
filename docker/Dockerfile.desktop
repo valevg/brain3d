@@ -1,0 +1,66 @@
+# Образ desktop-приложения Brain3D (PyQt5 + PyVista) для запуска в Docker Desktop.
+# Позволяет обойти несовместимость torch==2.3.1 с Python 3.13+ на хосте:
+# внутри контейнера фиксированный Python 3.10 из requirements/.
+#
+# Сборка (из корня репозитория):
+#   docker build -f docker/Dockerfile.desktop -t brain3d-desktop .
+#
+# Запуск с GUI (см. README.md — X11/vcxsrv/VNC в зависимости от ОС):
+#   docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
+#       -v "$PWD/data:/app/data" brain3d-desktop
+#
+# ВАЖНО про GPU: CUDA-версия torch из PyPI требует драйвер >= 12.x, который
+# плохо пробрасывается в WSL2 (Docker Desktop). Здесь CPU-torch — сегментация
+# MONAI работает медленнее, но стабильно. Для GPU запускайте приложение
+# нативно в виртуальном окружении Python 3.11/3.12.
+
+FROM python:3.10-slim AS base
+
+# Системные зависимости Qt5 (libxcb и свита), OpenGL/VTK, обработка изображений.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1 \
+    libglu1-mesa \
+    libxrender1 \
+    libsm6 \
+    libxext6 \
+    libxkbcommon-x11-0 \
+    libxcb-xinerama0 \
+    libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-randr0 \
+    libxcb-render-util0 \
+    libxcb-shape0 \
+    libegl1 \
+    fontconfig \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements/requirements-common.txt requirements/requirements-desktop.txt requirements/
+RUN pip install --no-cache-dir -r requirements/requirements-common.txt -r requirements/requirements-desktop.txt
+
+COPY core/ core/
+COPY models/ models/
+COPY pipelines/ pipelines/
+COPY shared/ shared/
+COPY configs/ configs/
+COPY desktop/ desktop/
+
+RUN useradd --create-home --uid 1000 brain3d \
+    && mkdir -p /app/data \
+    && chown -R brain3d:brain3d /app
+USER brain3d
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    STORAGE_DIR=/app/data \
+    QT_QPA_PLATFORM=xcb \
+    QT_AUTO_SCREEN_SCALE_FACTOR=0
+
+# Каталог для DICOM/NIfTI-исследований (монтируется с хоста -v ...)
+VOLUME ["/app/data"]
+
+CMD ["python", "-m", "desktop.main"]

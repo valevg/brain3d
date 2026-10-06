@@ -1,9 +1,15 @@
 # Локальный/staging деплой Brain3D AI: FastAPI backend + Three.js frontend.
-# Desktop-приложение (PyQt5) не контейнеризуется — оно запускается локально на машине врача.
+# Desktop-приложение (PyQt5) по умолчанию запускается локально на машине врача;
+# для окружений без совместимого Python (например, хост с Python 3.13+, где
+# недоступен torch==2.3.1) можно использовать сервис desktop (см. ниже) —
+# он требует проброса X11/VNC, подробности в docker/Dockerfile.desktop.
 #
-# Запуск:
+# Запуск API+web:
 #   docker compose up --build
 # API будет доступен на http://localhost:8000, web-интерфейс — на http://localhost:8080.
+#
+# Запуск desktop-образа (опционально):
+#   docker compose run --rm desktop
 
 services:
   api:
@@ -41,6 +47,21 @@ services:
         condition: service_healthy
     ports:
       - "8080:80"
+
+  # Опциональный запуск PyQt5-приложения в контейнере (требует X11/VNC,
+  # см. комментарии в docker/Dockerfile.desktop). Не стартует вместе с `up`:
+  #   docker compose run --rm desktop
+  desktop:
+    profiles: ["desktop"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.desktop
+    image: brain3d-desktop:latest
+    environment:
+      - DISPLAY=${DISPLAY:-}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./data:/app/data
 
 volumes:
   brain3d-data:
