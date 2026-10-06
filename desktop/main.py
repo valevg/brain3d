@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from PyQt6.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication
 
 from core.config import get_settings
 from core.logging_config import setup_logging

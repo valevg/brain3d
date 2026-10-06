@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PyQt5.QtWidgets import (
+    QApplication,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -60,6 +61,8 @@ class MainWindow(QMainWindow):
 
         self._status_label.setText("Обработка… это может занять несколько минут")
         self._open_button.setEnabled(False)
+        # Принудительная отрисовка, чтобы статус успел отобразиться до блокирующей обработки.
+        QApplication.processEvents()
         try:
             pipeline, volume = create_pipeline(Path(path_str))
             meshes = pipeline.run(volume)
