@@ -40,10 +40,17 @@ export class SceneManager {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-    directional.position.set(1, 1, 1);
-    this.scene.add(directional);
+    // Освещение сцены: два направленных источника (основной + заполняющий с
+    // противоположной стороны) плюс ambient — так структуры читаются с любой стороны.
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+
+    this.keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    this.keyLight.position.set(1, 1, 1);
+    this.scene.add(this.keyLight);
+
+    this.fillLight = new THREE.DirectionalLight(0xbfd4ff, 0.9);
+    this.fillLight.position.set(-1, -0.5, -1);
+    this.scene.add(this.fillLight);
   }
 
   _initRenderLoop() {
@@ -81,6 +88,7 @@ export class SceneManager {
             if (!child.isMesh) return;
             child.material.vertexColors = true;
             child.material.transparent = true;
+            this._boostMaterial(child.material);
 
             // Имя структуры — на самом меше либо на его родительском узле
             // (см. core.mesh_generator.MeshGenerator.build_scene: node_name=geom_name=name).
@@ -120,6 +128,23 @@ export class SceneManager {
   /** Имена структур, реально присутствующих в загруженной сцене. */
   getStructureNames() {
     return Array.from(this.structures.keys());
+  }
+
+  /**
+   * Делает материалы структур поярче: самосвечение по цвету геометрии
+   * (structure color) плюс более яркий отклик на освещение.
+   * @param {THREE.Material} material
+   */
+  _boostMaterial(material) {
+    if (!material) return;
+    // Эмиссия = собственный цвет, чтобы структуры были яркими даже в тени.
+    if (material.color) {
+      material.emissive = material.color.clone();
+    }
+    if ("emissiveIntensity" in material) material.emissiveIntensity = 0.55;
+    if ("roughness" in material) material.roughness = Math.max((material.roughness ?? 1) * 0.6, 0.2);
+    if ("metalness" in material) material.metalness = Math.min((material.metalness ?? 0) + 0.1, 1);
+    material.needsUpdate = true;
   }
 
   _centerCameraOn(object) {
