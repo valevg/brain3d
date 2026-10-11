@@ -109,6 +109,88 @@ body {
   flex-direction: column;
   gap: 12px;
   z-index: 15;
+  transition: transform 0.3s ease;
+}
+
+/* --- Сворачивание панелей (кнопки-«шторки» у краёв экрана) --- */
+
+/* Кнопка сворачивания сайдбарa: прижата к его правому краю и «едет» вместе с ним
+   (наследует трансформ родителя), поэтому в свёрнутом состоянии остаётся
+   видимой узкой полоской у левого края экрана. */
+.collapse-toggle {
+  position: fixed;
+  z-index: 16;
+  width: 18px;
+  height: 64px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition:
+    transform 0.3s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.collapse-toggle:hover {
+  color: var(--text);
+  background: rgba(40, 44, 52, 0.95);
+}
+
+.toggle-sidebar {
+  top: 120px;
+  left: 340px;
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+body.sidebar-collapsed .sidebar {
+  transform: translateX(-100%);
+}
+
+body.sidebar-collapsed .toggle-sidebar {
+  transform: translateX(calc(-340px + 18px));
+}
+
+.toggle-results {
+  top: 120px;
+  right: 320px;
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+/* Кнопка сворачивания панели результатов: прижата к её левому краю. Когда панель
+   скрыта (атрибут [hidden] ставит ModelInfoPanel.hide()), кнопка тоже прячется —
+   раскрывать нечего. */
+#toggle-results {
+  transition:
+    transform 0.3s ease,
+    opacity 0.2s ease;
+}
+
+#model-info-panel[hidden] ~ #toggle-results {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.results-collapsed .model-info-panel:not([hidden]) {
+  transform: translateX(calc(100% + 16px));
+}
+
+body.results-collapsed .toggle-results {
+  transform: translateX(calc(320px - 18px));
+}
+
+/* Прогресс-панель расширяется на освободившееся место слева при свёрнутом меню. */
+.progress-panel {
+  transition: left 0.3s ease;
+}
+
+body.sidebar-collapsed .progress-panel {
+  left: 16px;
 }
 
 .panel {
@@ -408,6 +490,7 @@ body {
   max-height: calc(100vh - 140px);
   overflow-y: auto;
   z-index: 15;
+  transition: transform 0.3s ease;
 }
 
 .result-section {
@@ -467,10 +550,45 @@ body {
     flex-direction: column;
   }
 
+  /* На мобильных сайдбар сворачивается вниз, а не влево. */
+  body.sidebar-collapsed .sidebar {
+    transform: translateY(100%);
+  }
+
+  .toggle-sidebar {
+    top: auto;
+    bottom: calc(60vh + 8px);
+    left: 50%;
+    margin-left: -32px;
+    width: 64px;
+    height: 18px;
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+  }
+
+  body.sidebar-collapsed .toggle-sidebar {
+    transform: translateY(calc(-60vh + 18px));
+  }
+
+  /* Панель результатов на мобильных в потоке — её сворачивание отключено;
+     кнопка-«шторка» справа не нужна. */
+  .toggle-results {
+    display: none;
+  }
+
+  body.results-collapsed .model-info-panel:not([hidden]) {
+    transform: none;
+  }
+
   .progress-panel {
     left: 8px;
     right: 8px;
     bottom: calc(60vh + 8px);
+  }
+
+  body.sidebar-collapsed .progress-panel {
+    left: 8px;
+    bottom: 8px;
   }
 
   .model-info-panel {

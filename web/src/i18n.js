@@ -91,6 +91,9 @@ const MESSAGES = {
     "results.downloadButton": "Скачать 3D-модель",
     "results.viewButton": "Показать в 3D",
 
+    "panels.collapse": "Свернуть панель",
+    "panels.expand": "Развернуть панель",
+
     "common.gigabytes": "ГБ",
     "common.close": "Закрыть",
     "common.retry": "Повторить",
@@ -185,6 +188,9 @@ const MESSAGES = {
     "results.polygons": "{count} structure(s), faces: {faces}",
     "results.downloadButton": "Download 3D model",
     "results.viewButton": "Show in 3D",
+
+    "panels.collapse": "Collapse panel",
+    "panels.expand": "Expand panel",
 
     "common.gigabytes": "GB",
     "common.close": "Close",

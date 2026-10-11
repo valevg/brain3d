@@ -17,7 +17,11 @@
       <div id="locale-switch"></div>
     </header>
 
-    <aside class="sidebar">
+    <!-- Кнопки сворачивания панелей: задвигают сайдбар слева и панель результатов
+         справа за край экрана, освобождая место для 3D-вьюпорта. -->
+    <button type="button" class="collapse-toggle toggle-sidebar" id="toggle-sidebar" aria-controls="sidebar" aria-expanded="true">&#x25C0;</button>
+
+    <aside class="sidebar" id="sidebar">
       <div class="panel" id="uploader-panel"></div>
       <div class="panel" id="resources-panel"></div>
       <div class="panel" id="pipeline-settings-panel"></div>
@@ -25,6 +29,7 @@
     </aside>
 
     <div class="panel progress-panel" id="progress-bar-panel"></div>
+    <button type="button" class="collapse-toggle toggle-results" id="toggle-results" aria-controls="model-info-panel" aria-expanded="true">&#x25B6;</button>
     <div class="panel model-info-panel" id="model-info-panel"></div>
 
     <script type="module" src="/src/main.js"></script>

@@ -20,6 +20,51 @@ new ModelsPanel(document.getElementById("models-panel")); // самодоста�
 const progressBar = new ProgressBar(document.getElementById("progress-bar-panel"));
 const modelInfoPanel = new ModelInfoPanel(document.getElementById("model-info-panel"));
 
+// --- Сворачивание бокового меню и панели результатов (кнопки-«шторки» у краёв) ---
+
+/**
+ * Привязывает кнопку к классу на <body>, который CSS-правилами задвигает панель
+ * за край экрана; направление стрелки и aria-expanded отражают текущее состояние.
+ * @param {string} buttonId - id кнопки-переключателя.
+ * @param {string} collapsedClass - класс на document.body в свёрнутом состоянии.
+ * @param {string} arrowCollapsed - символ стрелки, когда панель свёрнута (раскрыть).
+ * @param {string} arrowExpanded - символ стрелки, когда панель видна (свернуть).
+ */
+function bindCollapseToggle(buttonId, collapsedClass, arrowCollapsed, arrowExpanded) {
+  const button = document.getElementById(buttonId);
+  const targetId = button.getAttribute("aria-controls");
+  const target = document.getElementById(targetId);
+
+  const render = () => {
+    const collapsed = document.body.classList.contains(collapsedClass);
+    button.textContent = collapsed ? arrowCollapsed : arrowExpanded;
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.title = t(collapsed ? "panels.expand" : "panels.collapse");
+  };
+
+  button.addEventListener("click", () => {
+    document.body.classList.toggle(collapsedClass);
+    render();
+  });
+
+  // При каждом показе панели результатов сбрасываем «задвинутое» состояние,
+  // чтобы новый результат всегда был виден пользователю.
+  if (targetId === "model-info-panel") {
+    const observer = new MutationObserver(() => {
+      if (!target.hidden && document.body.classList.contains(collapsedClass)) {
+        document.body.classList.remove(collapsedClass);
+        render();
+      }
+    });
+    observer.observe(target, { attributes: true, attributeFilter: ["hidden"] });
+  }
+
+  render();
+}
+
+bindCollapseToggle("toggle-sidebar", "sidebar-collapsed", "\u25B6", "\u25C0");
+bindCollapseToggle("toggle-results", "results-collapsed", "\u25C0", "\u25B6");
+
 modelInfoPanel.onViewInScene = async (taskId) => {
   try {
     await sceneManager.loadCombinedScene(resolveResultDownloadUrl(taskId));
