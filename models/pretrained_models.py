@@ -247,8 +247,17 @@ class PretrainedModelRegistry:
         return spec
 
     def is_cached(self, model_name: str) -> bool:
-        """Проверяет, есть ли для модели непустой кэш на диске."""
+        """Проверяет, есть ли для модели непустой кэш на диске.
+
+        Веса TotalSegmentator скачиваются самой библиотекой в её собственный кэш
+        (~/.totalsegmentator), а не в кэш Brain3D, поэтому наличие файлов в кэше
+        реестра о ней ничего не говорит — всегда False (см. также
+        _download_totalsegmentator_weights). Остальные источники (monai_bundle,
+        med3d) честно проверяются по содержимому cache_dir/<source>/<name>.
+        """
         spec = self.get_model(model_name)
+        if spec.source == "totalsegmentator":
+            return False
         return self._is_populated(self._model_cache_path(spec))
 
     def download_model(
@@ -260,8 +269,10 @@ class PretrainedModelRegistry:
         """Скачивает веса модели в локальный кэш (если их там ещё нет) и возвращает путь.
 
         Механизм скачивания зависит от source:
-            - "totalsegmentator": веса скачивает сама библиотека при первом сегментировании
-              (см. TotalSegmentatorWrapper.segment) — этот метод только логирует напоминание;
+            - "totalsegmentator": веса скачивает сама библиотека в собственный кэш
+              (~/.totalsegmentator) — здесь вызывается её загрузчик
+              (_download_totalsegmentator_weights), чтобы веса появились ДО первого
+              segment() и кнопка «Скачать» в UI делала что-то реальное;
             - "monai_bundle": через monai.bundle.download(name=..., bundle_dir=...);
             - "med3d": веса скачивает MONAI при первом создании модели с pretrained=True
               (см. Med3DLoader.load_pretrained_encoder) — этот метод только логирует напоминание;
@@ -294,7 +305,9 @@ class PretrainedModelRegistry:
             if spec.source == "monai_bundle":
                 _download_monai_bundle(spec, target_dir)
             elif spec.source == "totalsegmentator":
-                logger.info("TotalSegmentator скачивает веса самостоятельно при первом вызове segment()")
+                # Реальное скачивание весов в ~/.totalsegmentator ДО первого segment();
+                # при отсутствии пакета/сети понятная ошибка вместо «тихого» no-op.
+                _download_totalsegmentator_weights(spec)
             elif spec.source == "med3d":
                 logger.info(
                     "Веса Med3D/MedicalNet скачиваются MONAI при первом создании модели "
@@ -339,6 +352,45 @@ def _download_monai_bundle(spec: ModelSpec, target_dir: Path) -> None:
         bundle_download(name=spec.bundle_name, bundle_dir=str(target_dir))
     except Exception as exc:  # noqa: BLE001 — сеть/диск/сервер MONAI hosting могут падать по-разному
         raise ModelDownloadError(f"Не удалось скачать bundle {spec.bundle_name!r}: {exc}") from exc
+
+
+def _download_totalsegmentator_weights(spec: ModelSpec) -> None:
+    """Скачивает веса TotalSegmentator для задачи модели в её собственный кэш (~/.totalsegmentator).
+
+    Библиотека подтягивает zip задачи с GitHub-releases и распаковывает его при первом
+    вызове; здесь этот процесс запускается заранее — через публичный загрузчик весов
+    totalsegmentator.libs.download_pretrained_models (для старых версий библиотеки —
+    запасной путь через totalsegmentator.map_to_binary).
+
+    Args:
+        spec: Модель реестра с source="totalsegmentator"; задача берётся из spec.name
+            (например, "totalsegmentator_headneck_vessels" -> "headneck_bones_vessels").
+
+    Raises:
+        ModelDownloadError: Если пакет totalsegmentator не установлен либо скачивание
+            не удалось (нет сети/места, неизвестная задача).
+    """
+    task = spec.name.removeprefix("totalsegmentator_") or "total"
+    try:
+        from totalsegmentator import libs as ts_libs
+    except ImportError:
+        try:
+            from totalsegmentator.map_to_binary import class_map  # старая версия библиотеки
+        except ImportError as exc:
+            raise ModelDownloadError(
+                "Пакет totalsegmentator не установлен. Установите: pip install totalsegmentator"
+            ) from exc
+        if task not in class_map:
+            raise ModelDownloadError(f"Неизвестная задача TotalSegmentator: {task!r}")
+        return
+
+    try:
+        ts_libs.download_pretrained_models(task)
+    except SystemExit as exc:  # библиотека иногда завершает процесс при битой сети/zip
+        raise ModelDownloadError(f"Не удалось скачать веса TotalSegmentator (task={task!r}): {exc}") from exc
+    except Exception as exc:  # noqa: BLE001 — сеть/диск/GitHub releases могут падать по-разному
+        raise ModelDownloadError(f"Не удалось скачать веса TotalSegmentator (task={task!r}): {exc}") from exc
+    logger.info("Веса TotalSegmentator (task=%s) скачаны в ~/.totalsegmentator", task)
 
 
 def _verify_checksum(path: Path, expected_sha256: str, chunk_size: int = 1024 * 1024) -> None:
