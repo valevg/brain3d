@@ -376,11 +376,24 @@ def download_model_endpoint(
 
     Raises:
         HTTPException 404: Модель с таким именем не найдена в реестре.
+        HTTPException 400: Для модели скачивание не применимо (med3d — веса подтягивает
+            MONAI при первом создании модели; vista3d — облачный API/Docker-образ).
+            Без этой проверки фоновая задача завершилась бы «успешно», ничего не скачав,
+            и UI показывал бы вечный/пустой прогресс.
     """
     try:
-        registry.get_model(body.model_name)
+        spec = registry.get_model(body.model_name)
     except ModelNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    if spec.source in ("med3d", "vista3d"):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Модель {body.model_name!r} не скачивается через Brain3D "
+                f"(источник: {spec.source}) — она доступна автоматически либо через внешний сервис"
+            ),
+        )
 
     task_id = str(uuid.uuid4())
     _DOWNLOAD_STATE[body.model_name] = "downloading"

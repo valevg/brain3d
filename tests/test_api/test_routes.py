@@ -192,8 +192,10 @@ class TestDownloadModel:
 
         def _fake_download(name: str, **kwargs: object) -> Path:
             # Мок должен реально населять кэш файлом — иначе registry.is_cached()
-            # (используемый /api/models/available для статуса "loaded") останется False,
-            # т.к. он проверяет наличие файлов на диске, а не факт вызова download_model().
+            # (используемый /api/models/available для статуса "loaded") останется False:
+            # он проверяет наличие файлов на диске в кэше реестра, а не факт вызова
+            # download_model() (и всегда False для totalsegmentator-моделей, чьи веса
+            # лежат в ~/.totalsegmentator). Поэтому берём модель с downloadable-источником.
             spec = registry.get_model(name)
             path = registry.cache_dir / spec.source / spec.name
             path.mkdir(parents=True, exist_ok=True)
@@ -202,7 +204,7 @@ class TestDownloadModel:
 
         monkeypatch.setattr(registry, "download_model", _fake_download)
 
-        response = api_client.post("/api/models/download", json={"model_name": "totalsegmentator_total"})
+        response = api_client.post("/api/models/download", json={"model_name": "med3d_resnet18"})
 
         assert response.status_code == 202
         body = response.json()
@@ -210,7 +212,7 @@ class TestDownloadModel:
         assert body["websocket_url"] == f"/ws/progress/{body['task_id']}"
 
         listing = api_client.get("/api/models/available").json()["models"]
-        model = next(m for m in listing if m["name"] == "totalsegmentator_total")
+        model = next(m for m in listing if m["name"] == "med3d_resnet18")
         assert model["status"] == "loaded"
 
     def test_failed_download_sets_status_to_error(
